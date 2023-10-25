@@ -1,22 +1,24 @@
 import openpyxl as xl
-from openpyxl import Workbook
 from schoolnetFunctions import pull_test_id, pull_names_from_schoolnet, pull_point_columns
 
 """NOTES TO THE NOODLE:
-- 10/14, added standards questions
+10/18
+- Same sheet, imported again, messes up. How to note completed? Symbol? "DONE" ? 
+- Also, Maybe change color of averages columns
+- What about when a new sheet is imported... how does this work with multiple sheets?
+
 - Next steps, 
     - standardizing Standards inputs
     - Consolidating student info into one tag? Good idea, I think?
-    - averaging grades by standard
     - Consolidate info by average or standard on first sheet, sheet 1.
     - lastly, major clean up and reorganizing. Hm. 
+        - use classes instead and share variables
 """
 
-# wb = Workbook()
 wb = xl.load_workbook('2023-24Grades.xlsx')
 sheet = wb.active
 
-file_to_import = 'TestResults_5174646.xlsx' # Replace additional file name here
+file_to_import = 'TestResults_5174646.xlsx'   # Replace additional file name here
 testid = pull_test_id(file_to_import)
 
 if wb.sheetnames.count(testid) == True:
@@ -38,8 +40,7 @@ for item in range(0, len(points_array)):
     for point in range(0, len(points_row)):
         sheet_new.cell(item + 1, point + len(names_row) + 1).value = points_array[item][point]
 
-print(bool(sheet_new.cell(1,1).value))
-
+standard_list = []
 # Need to standardize how standards are input, or they won't categorize together
 if sheet_new.cell(1, 1).value:
     resubmit = input("Do you wish to resubmit standards for this quiz? (Yes/No): ").lower()
@@ -51,19 +52,87 @@ if sheet_new.cell(1, 1).value:
             q_standard = input(f"Q{question + 1}: ")
             ques_num = "Q" + str(question + 1)  # Formats question number
             ques_column_pos = question + len(names_row) + 1
-            sheet_new.cell(1, ques_column_pos).value = f'{ques_num}:{q_standard}'
+            sheet_new.cell(1, ques_column_pos).value = f'{q_standard}'
+            if standard_list.count(q_standard) < 1:
+                standard_list.append(q_standard)        # Appends only new standards to list
     else:
         print("Okay, no changes will be made.")
-# Never goes to this loop, either. How to fix, and redundancy, too?
-elif sheet_new.cell(1, 1).value == False:
-    sheet_new.insert_rows(1)
-    print(f"For test ID #{testid}, identify standard for: ")
-    for question in range(len(points_row)):
-        q_standard = input(f"Q{question + 1}: ")
-        ques_num = "Q" + str(question + 1) # Formats question number
-        ques_column_pos = question + len(names_row) + 1
-        sheet_new.cell(1, ques_column_pos).value = f'{ques_num}:{q_standard}'
 
-# Also, slice string for what comes before and after the colon to find Q# and Standard easily?
+# Inserting new columns
+col_count = 0
+column_offset = len(names_row) + col_count + 1
+for standard in standard_list:
+    sheet_new.insert_cols(column_offset)
+    col_count += 1
 
-wb.save('2023-24Grades.xlsx')
+standard_pos = []
+single_standard_pos = []
+# col_count = 0
+
+# Finding col nums
+for standard in standard_list:
+    single_standard_pos = []
+    for header_cols in range(1, sheet_new.max_column + 1):
+        if sheet_new.cell(1, header_cols).value == standard:
+            single_standard_pos.append(header_cols)
+    standard_pos.append(single_standard_pos)
+
+# Add names, oh no
+# Adding col one pos too far right
+col_count = 0
+for standard in standard_list:
+    sheet_new.cell(1, column_offset + col_count).value = standard
+    col_count += 1
+
+print(standard_list)
+
+col_count = 0
+for name in range(1, sheet_new.max_row + 1):    # should this start at 2?
+    off_offset = 0
+    for cols in standard_pos:   # pulls each standard's column(s)
+        occurs_count = 0
+        point_sum = 0
+        sum_per_standard = 0
+        standard_avg = 0
+        for i in cols:          # pulls values for each standard
+            try:
+                sum_per_standard += sheet_new.cell(name + 1, i).value
+                occurs_count += 1
+            except:
+                name += 1
+        try:
+            standard_avg = sum_per_standard / occurs_count
+        except ZeroDivisionError:
+            standard_avg = 0
+            print("Division by zero")
+        sheet_new.cell(name + 1, column_offset + off_offset).value = standard_avg
+        off_offset += 1
+
+
+
+
+""" On first sheet:
+- need list of all names
+- match names to scores... Skip those who don't have a score.
+- average scores from each sheet as added -- active process! How? 
+    - As new quizzes are added, add them all up on each sheet, don't divide? 
+    - Keep track of how many col_names there are for all sheets?
+    - Divide them out only on main sheet?
+- Once a kid takes a quiz, I should be able to upload the same spreadsheet again without errors for others.
+"""
+
+# # Working in the main sheet
+# col = 0
+# main_sheet_headers = ['Name']
+# for i in main_sheet_headers:
+#     col += 1        # This can be... simpler, right?
+#     sheet.cell(1, col).value = i
+
+# only append standards to standard list if not already in existence
+# main_sheet_headers.append(standard_list)
+
+
+
+
+
+# wb.save('2023-24Grades.xlsx')
