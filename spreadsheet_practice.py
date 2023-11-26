@@ -1,5 +1,5 @@
 import openpyxl as xl
-from schoolnetFunctions import pull_test_id, pull_names_from_schoolnet, pull_point_columns
+from schoolnetFunctions import pull_test_id, pull_names_from_schoolnet, pull_point_columns, standards_no_repeat
 
 """NOTES TO THE NOODLE:
 10/18
@@ -13,50 +13,55 @@ from schoolnetFunctions import pull_test_id, pull_names_from_schoolnet, pull_poi
     - Consolidate info by average or standard on first sheet, sheet 1.
     - lastly, major clean up and reorganizing. Hm. 
         - use classes instead and share variables
+        - Person class? With standards attributes
 """
 
-wb = xl.load_workbook('2023-24Grades.xlsx')
-sheet = wb.active
+# wb = xl.load_workbook('2023-24Grades.xlsx')
+# sheet = wb.active
+#
+# file_to_import = 'TestResults_5174646.xlsx'   # Replace additional file name here
+# testid = pull_test_id(file_to_import)
 
-file_to_import = 'TestResults_5174646.xlsx'   # Replace additional file name here
-testid = pull_test_id(file_to_import)
+# if wb.sheetnames.count(testid) == True:
+#     sheet_new = wb[testid]
+# else:
+#     sheet_new = wb.create_sheet(testid, 1)
 
-if wb.sheetnames.count(testid) == True:
-    sheet_new = wb[testid]
-else:
-    sheet_new = wb.create_sheet(testid, 1)
+# # Unpack array of redacted names and IDs to a new sheet from pull_names function
+# names_array = pull_names_from_schoolnet(file_to_import)
+# for item in range(0, len(names_array)):
+#     names_row = names_array[item]
+#     for point in range(len(names_row)):
+#         sheet_new.cell(item + 1, point + 1).value = str(names_array[item][point])
 
-# Unpack array of redacted names and IDs to a new sheet from pull_names function
-names_array = pull_names_from_schoolnet(file_to_import)
-for item in range(0, len(names_array)):
-    names_row = names_array[item]
-    for point in range(len(names_row)):
-        sheet_new.cell(item + 1, point + 1).value = str(names_array[item][point])
+# # Unpack points array to same test sheet from pull_points function
+# points_array = pull_point_columns(file_to_import)
+# for item in range(0, len(points_array)):
+#     points_row = points_array[item]
+#     for point in range(0, len(points_row)):
+#         sheet_new.cell(item + 1, point + len(names_row) + 1).value = points_array[item][point]
 
-# Unpack points array to same test sheet from pull_points function
-points_array = pull_point_columns(file_to_import)
-for item in range(0, len(points_array)):
-    points_row = points_array[item]
-    for point in range(0, len(points_row)):
-        sheet_new.cell(item + 1, point + len(names_row) + 1).value = points_array[item][point]
 
-standard_list = []
-# Need to standardize how standards are input, or they won't categorize together
-if sheet_new.cell(1, 1).value:
-    resubmit = input("Do you wish to resubmit standards for this quiz? (Yes/No): ").lower()
-    if resubmit == "yes":
-        # This junk is redundant. I need to avoid repeating myself.. laterz.
-        sheet_new.insert_rows(1)
-        print(f"For test ID #{testid}, identify standard for: ")
-        for question in range(len(points_row)):
-            q_standard = input(f"Q{question + 1}: ")
-            ques_num = "Q" + str(question + 1)  # Formats question number
-            ques_column_pos = question + len(names_row) + 1
-            sheet_new.cell(1, ques_column_pos).value = f'{q_standard}'
-            if standard_list.count(q_standard) < 1:
-                standard_list.append(q_standard)        # Appends only new standards to list
-    else:
-        print("Okay, no changes will be made.")
+
+# standard_list = []
+# # Need to standardize how standards are input, or they won't categorize together
+# if sheet_new.cell(1, 1).value:
+#     resubmit = input("Do you wish to resubmit standards for this quiz? (Yes/No): ").lower()
+#     if resubmit == "yes":
+#         # This junk is redundant. I need to avoid repeating myself.. laterz.
+#         sheet_new.insert_rows(1)
+#         print(f"For test ID #{testid}, identify standard for: ")
+#         for question in range(len(points_row)):
+#             q_standard = input(f"Q{question + 1}: ")
+#             ques_num = "Q" + str(question + 1)  # Formats question number
+#             ques_column_pos = question + len(names_row) + 1
+#             sheet_new.cell(1, ques_column_pos).value = f'{q_standard}'
+#             standards_no_repeat(q_standard, standard_list)      # Modded with function, but not sure about next one...
+#     else:
+#         print("Okay, no changes will be made.")
+
+# global_standard_list = list()    # Can I move elsewhere to not reset this every time?
+# standards_no_repeat(standard_list, global_standard_list)
 
 # Inserting new columns
 col_count = 0
@@ -83,8 +88,6 @@ col_count = 0
 for standard in standard_list:
     sheet_new.cell(1, column_offset + col_count).value = standard
     col_count += 1
-
-print(standard_list)
 
 col_count = 0
 for name in range(1, sheet_new.max_row + 1):    # should this start at 2?
@@ -121,12 +124,12 @@ for name in range(1, sheet_new.max_row + 1):    # should this start at 2?
 - Once a kid takes a quiz, I should be able to upload the same spreadsheet again without errors for others.
 """
 
-# # Working in the main sheet
-# col = 0
-# main_sheet_headers = ['Name']
-# for i in main_sheet_headers:
-#     col += 1        # This can be... simpler, right?
-#     sheet.cell(1, col).value = i
+# Working in the main sheet
+col = 0
+main_sheet_headers = ['Name']
+for i in main_sheet_headers:
+    col += 1        # This can be... simpler, right?
+    sheet.cell(1, col).value = i
 
 # only append standards to standard list if not already in existence
 # main_sheet_headers.append(standard_list)
